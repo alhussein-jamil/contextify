@@ -1,6 +1,22 @@
-# contextify
+<p align="center">
+  <img src="assets/Contextify.png" alt="contextify logo" width="128">
+</p>
 
-Export any git repository into a **single compressed context bundle** for LLMs, code review, or archival.
+<h1 align="center">contextify</h1>
+
+<p align="center">
+  <strong>Your entire repo, one paste away.</strong><br>
+  Turn a sprawling codebase into a single LLM-ready bundle — no copy-paste archaeology required.
+</p>
+
+<p align="center">
+  <em>“Where’s the auth middleware?”</em> · <em>“What calls this API?”</em> · <em>“Explain this repo.”</em><br>
+  Stop feeding models breadcrumbs. Give them the whole loaf.
+</p>
+
+---
+
+**contextify** walks your git tree, skips the noise (`node_modules`, locks, prior exports), and ships a tidy `context_export/` folder: tree, index, raw source, binaries, and token stats. One command. One bundle. Fewer hallucinations.
 
 ```
 context_export/
@@ -9,6 +25,8 @@ context_export/
 ├── statistics.json   # tokens, languages, per-file manifest
 └── statistics.txt    # human-readable summary
 ```
+
+> **TL;DR** — `contextify .` → drag `context.txt` into your favourite model → pretend you read every file.
 
 ## Install
 
@@ -113,6 +131,8 @@ Search for `=== src/main.py ===` to jump to a file.
 ```bash
 uv venv && source .venv/bin/activate
 uv pip install -e ".[dev,all]"
+pre-commit install
+pre-commit run --all-files
 pytest
 ruff check src tests
 ```

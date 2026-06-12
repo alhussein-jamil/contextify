@@ -5,6 +5,7 @@ from pathlib import Path
 
 block_cipher = None
 root = Path(SPECPATH)
+icon_file = root / "assets" / "contextify.ico"
 
 datas = [(str(root / "src/contextify/contextify.ignore"), "contextify")]
 
@@ -45,6 +46,7 @@ exe = EXE(
     a.datas,
     [],
     name="contextify",
+    icon=str(icon_file) if icon_file.is_file() else None,
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

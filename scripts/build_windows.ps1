@@ -16,6 +16,10 @@ if ($env:SKIP_TESTS -ne "1") {
     pytest tests/ -q --tb=short
 }
 
+Write-Host "==> Generating Windows icon"
+uv pip install pillow -q
+python scripts/generate_icons.py
+
 Write-Host "==> Building executable with PyInstaller"
 pyinstaller contextify.spec --noconfirm --clean
 

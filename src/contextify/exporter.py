@@ -66,6 +66,7 @@ def bundled_ignore_file() -> Path:
             return frozen
     return PACKAGE_DIR / "contextify.ignore"
 
+
 TEXT_EXTENSIONS = frozenset(
     {
         ".py",
@@ -504,7 +505,9 @@ class IgnoreRule:
                 candidates = (*candidates, f"**/{name}", f"**/{path}")
 
         for candidate in candidates:
-            if fnmatch.fnmatch(candidate, self.pattern) or fnmatch.fnmatchcase(candidate, self.pattern):
+            if fnmatch.fnmatch(candidate, self.pattern) or fnmatch.fnmatchcase(
+                candidate, self.pattern
+            ):
                 return True
         return False
 
@@ -830,9 +833,7 @@ def compute_primary_language(stats: ExportStats) -> str | None:
         return None
 
     code_langs = [
-        lang
-        for lang in stats.languages.values()
-        if lang.language not in PRIMARY_LANGUAGE_EXCLUDE
+        lang for lang in stats.languages.values() if lang.language not in PRIMARY_LANGUAGE_EXCLUDE
     ]
     pool = code_langs or list(stats.languages.values())
     ranked = sorted(pool, key=lambda lang: (-lang.tokens, -lang.bytes, lang.language))
@@ -888,7 +889,9 @@ def iter_repo_files(config: ExportConfig, logger: logging.Logger) -> Iterator[Pa
     gitignore = GitIgnoreMatcher(root) if config.respect_gitignore else None
     export_ignore = config.path_ignore
     if export_ignore is None:
-        raise RuntimeError("path_ignore matcher not initialised — call build_path_ignore_matcher() first")
+        raise RuntimeError(
+            "path_ignore matcher not initialised — call build_path_ignore_matcher() first"
+        )
 
     for dirpath, dirnames, filenames in os.walk(root, followlinks=config.follow_symlinks):
         current = Path(dirpath)
@@ -1010,7 +1013,8 @@ def build_file_tree(rel_paths: list[Path], root_label: str) -> str:
 
     def walk(node: _TreeNode, prefix: str) -> None:
         ordered: list[tuple[str, _TreeNode | None]] = [
-            (name, child) for name, child in sorted(node.dirs.items(), key=lambda item: item[0].lower())
+            (name, child)
+            for name, child in sorted(node.dirs.items(), key=lambda item: item[0].lower())
         ]
         ordered.extend((name, None) for name in sorted(node.files, key=str.lower))
 
@@ -1205,7 +1209,9 @@ def write_export_bundle(
         f"{SECTION_BREAK}\n"
     )
 
-    index_intro = f"{SECTION_BREAK} INDEX (path\\tstart\\tend\\tkind\\tlang\\ttokens) {SECTION_BREAK}\n"
+    index_intro = (
+        f"{SECTION_BREAK} INDEX (path\\tstart\\tend\\tkind\\tlang\\ttokens) {SECTION_BREAK}\n"
+    )
     contents_intro = f"{SECTION_BREAK} CONTENTS {SECTION_BREAK}\n"
 
     preamble_lines = count_lines(preamble)
@@ -1213,7 +1219,9 @@ def write_export_bundle(
     contents_intro_lines = count_lines(contents_intro)
     index_body_lines = count_lines(format_file_index(index_entries)) + 1  # trailing newline
 
-    contents_base_line = preamble_lines + index_intro_lines + index_body_lines + contents_intro_lines + 1
+    contents_base_line = (
+        preamble_lines + index_intro_lines + index_body_lines + contents_intro_lines + 1
+    )
 
     for entry in index_entries:
         entry.start_line += contents_base_line - 1
@@ -1229,11 +1237,7 @@ def write_export_bundle(
                 break
 
     final_text = (
-        preamble
-        + index_intro
-        + format_file_index(index_entries)
-        + contents_intro
-        + contents_body
+        preamble + index_intro + format_file_index(index_entries) + contents_intro + contents_body
     )
     config.context_path.write_text(final_text, encoding="utf-8")
 
@@ -1436,7 +1440,9 @@ def render_summary(
             console.print(langs)
 
         if stats.kinds:
-            kinds = Table(title="Binary MIME breakdown", show_header=True, header_style="bold magenta")
+            kinds = Table(
+                title="Binary MIME breakdown", show_header=True, header_style="bold magenta"
+            )
             kinds.add_column("Type")
             kinds.add_column("Count", justify="right")
             for mime, count in stats.kinds.most_common(8):
@@ -1561,7 +1567,9 @@ def resolve_paths(args: argparse.Namespace) -> ExportConfig:
     )
 
 
-def run_export(config: ExportConfig, logger: logging.Logger, console: Console | None) -> ExportStats:
+def run_export(
+    config: ExportConfig, logger: logging.Logger, console: Console | None
+) -> ExportStats:
     started = time.perf_counter()
     records: list[FileRecord]
 
@@ -1628,5 +1636,3 @@ def main(argv: list[str] | None = None) -> int:
         logger.error("Nothing exported — check paths, gitignore, or filters.")
         return 1
     return 0
-
-
