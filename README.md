@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/Contextify.png" alt="contextify logo" width="128">
+  <img src="assets/Contextify.png" alt="contextify logo" width="400">
 </p>
 
 <h1 align="center">contextify</h1>
