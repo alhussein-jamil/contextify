@@ -1,0 +1,192 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build artifacts only (skip GitHub Release upload)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --extra dev --extra all --extra build
+
+      - name: Run tests
+        run: uv run pytest tests/ -q
+
+  build-linux:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system tools
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends zip
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Verify tag matches package version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          uv sync --extra dev
+          TAG_VER="${GITHUB_REF_NAME#v}"
+          PKG_VER=$(uv run python -c "from contextify import __version__; print(__version__)")
+          if [ "$TAG_VER" != "$PKG_VER" ]; then
+            echo "::error::Tag v${TAG_VER} does not match contextify.__version__ (${PKG_VER})"
+            exit 1
+          fi
+
+      - name: Build Linux binary
+        env:
+          CI: "true"
+          SKIP_TESTS: "1"
+        run: bash scripts/build_linux.sh
+
+      - name: Smoke test standalone binary (no Python on PATH)
+        run: bash scripts/smoke_standalone.sh dist/contextify
+
+      - name: Package release zip
+        run: bash scripts/package_release.sh
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: contextify-linux-x86_64
+          path: dist/contextify-*-linux-x86_64.zip
+          if-no-files-found: error
+          retention-days: 30
+
+  build-windows:
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Verify tag matches package version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          uv sync --extra dev
+          $tagVer = $env:GITHUB_REF_NAME -replace '^v',''
+          $pkgVer = uv run python -c "from contextify import __version__; print(__version__)"
+          if ($tagVer -ne $pkgVer) {
+            Write-Error "Tag v$tagVer does not match contextify.__version__ ($pkgVer)"
+            exit 1
+          }
+
+      - name: Build Windows binary
+        env:
+          CI: "true"
+          SKIP_TESTS: "1"
+        shell: pwsh
+        run: ./scripts/build_windows.ps1
+
+      - name: Package release zip
+        shell: pwsh
+        run: ./scripts/package_release_windows.ps1
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: contextify-windows-x86_64
+          path: dist/contextify-*-windows-x86_64.zip
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    needs: [build-linux, build-windows]
+    runs-on: ubuntu-latest
+    if: >-
+      (startsWith(github.ref, 'refs/tags/v') ||
+       (github.event_name == 'workflow_dispatch' && inputs.dry_run == false))
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Resolve release tag
+        id: rel
+        run: |
+          uv sync
+          pkg_ver=$(uv run python -c "from contextify import __version__; print(__version__)")
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            tag="${{ github.ref_name }}"
+          else
+            tag="v${pkg_ver}"
+          fi
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: contextify-linux-x86_64
+          path: dist
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: contextify-windows-x86_64
+          path: dist
+
+      - name: Write combined checksums
+        run: |
+          ls -la dist/
+          cd dist
+          sha256sum *.zip > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.rel.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          files: |
+            dist/*.zip
+            dist/SHA256SUMS
+          generate_release_notes: true
+          make_latest: true
+          prerelease: ${{ contains(steps.rel.outputs.tag, '-') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,66 @@
+# contextify default skip rules (gitignore syntax)
+# Copy to your repo root as .contextifyignore to customise, or pass --ignore-file
+
+# export output (never re-ingest a previous run)
+context_export/
+*_export/
+
+# VCS & tooling
+.git/
+.hg/
+.svn/
+.bzr/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+node_modules/
+.venv/
+venv/
+.eggs/
+dist/
+build/
+.idea/
+.vscode/
+.cursor/
+htmlcov/
+.hypothesis/
+
+# lock / checksum manifests
+*.lock
+package-lock.json
+npm-shrinkwrap.json
+yarn.lock
+pnpm-lock.yaml
+poetry.lock
+Gemfile.lock
+composer.lock
+Cargo.lock
+Pipfile.lock
+shrinkwrap.yaml
+go.sum
+mix.lock
+
+# bytecode / compiled artefacts
+*.pyc
+*.pyo
+*.class
+*.o
+*.a
+
+# minified / generated front-end
+*.min.js
+*.min.css
+*.min.mjs
+*.map
+*.bundle.js
+*.chunk.js
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.coverage

@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+    tags-ignore:
+      - "v*"
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test-gate:
+    name: test (gate)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --extra dev --extra all
+
+      - name: Ruff
+        run: uv run ruff check src tests
+
+      - name: Pytest
+        run: uv run pytest tests/ -v
+
+  test-compat:
+    name: test (${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: uv sync --extra dev --extra all
+
+      - name: Pytest
+        run: uv run pytest tests/ -q
+
+  build-linux:
+    name: build-linux
+    needs: test-gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Build Linux binary
+        env:
+          CI: "true"
+          SKIP_TESTS: "1"
+        run: bash scripts/build_linux.sh
+
+      - name: Smoke test standalone binary (no Python on PATH)
+        run: bash scripts/smoke_standalone.sh dist/contextify
+
+      - name: Upload Linux binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: contextify-linux-ci
+          path: dist/contextify
+          retention-days: 7
+
+  build-windows:
+    name: build-windows
+    needs: test-gate
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Build Windows binary
+        env:
+          CI: "true"
+          SKIP_TESTS: "1"
+        shell: pwsh
+        run: ./scripts/build_windows.ps1
+
+      - name: Upload Windows binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: contextify-windows-ci
+          path: dist/contextify.exe
+          retention-days: 7

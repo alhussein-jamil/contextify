@@ -1,0 +1,20 @@
+contextify — standalone Windows build (no Python required)
+==========================================================
+
+This zip contains contextify.exe — a self-contained executable.
+You do NOT need Python, pip, uv, or any other runtime dependency.
+
+Quick start
+-----------
+  1. Unzip contextify-*-windows-x86_64.zip
+  2. Open the folder in PowerShell or Command Prompt
+  3. Run: contextify.exe --help
+  4. Export: contextify.exe C:\path\to\your\repo
+
+Optional: add the folder to your PATH, or copy contextify.exe anywhere.
+
+Custom skip rules
+-----------------
+  Copy contextify.ignore to your repo as .contextifyignore
+
+Verify download using SHA256SUMS from the GitHub release page.

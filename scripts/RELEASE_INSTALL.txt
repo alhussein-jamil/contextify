@@ -1,0 +1,24 @@
+contextify — standalone Linux build (no Python required)
+=======================================================
+
+This zip contains a single self-contained executable. You do NOT need
+Python, pip, uv, rich, or any other runtime dependency.
+
+Quick start
+-----------
+  unzip contextify-*-linux-x86_64.zip
+  cd contextify-*-linux-x86_64
+  ./contextify --help
+  ./contextify /path/to/your/repo
+
+Optional: install to PATH
+-------------------------
+  ./install.sh
+  # adds ~/.local/bin/contextify
+
+Custom skip rules
+-----------------
+  cp contextify.ignore /path/to/your/repo/.contextifyignore
+
+Verify download (SHA256SUMS from the GitHub release page):
+  sha256sum -c SHA256SUMS
